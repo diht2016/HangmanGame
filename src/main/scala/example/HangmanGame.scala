@@ -3,56 +3,61 @@ package example
 import scala.annotation.tailrec
 import scala.util.Random
 
-class HangmanGame(word: String, mistakesAllowed: Int) {
-  private type WordState = List[(Char, Boolean)]
-  private val initWordState: WordState = word.toList.map((_, false))
+object HangmanGame {
+  case class LetterState(letter: Char, isOpen: Boolean)
+  type WordState = List[LetterState]
 
-  private def visibleWord(wordState: WordState): String = {
-    wordState.map(ct => if (ct._2) ct._1 else '-').mkString("")
+  def maskedWord(wordState: WordState): String = {
+    wordState.map(ls => if (ls.isOpen) ls.letter else '-').mkString("")
   }
 
-  private def clearScreen(): Unit =
+  def clearScreen(): Unit =
     print("\u001b[2J\u001b[H")
 
-  private def printGameStatus(wordState: WordState, action: String): Unit = {
+  def printGameStatus(wordState: WordState, action: String): Unit = {
     clearScreen()
-    println(s"The word: ${visibleWord(wordState)}")
+    println(s"The word: ${maskedWord(wordState)}")
     println(s"$action")
   }
 
-  private def askForCharacter: Char = {
+  def askForCharacter: Char = {
     print("Guess a letter: ")
-    Console.in.read.toChar
+    Console.in.read.toChar.toLower
   }
 
   @tailrec
-  private def playIteration(wordState: WordState, mistakesDone: Int, lastAction: String): Boolean = {
+  final def playIteration(wordState: WordState, mistakesDone: Int, mistakesMax: Int, lastAction: String): Boolean = {
     printGameStatus(wordState, lastAction)
-    if (mistakesDone == mistakesAllowed) {
+    if (mistakesDone == mistakesMax) {
       false
-    } else if (wordState.forall(_._2)) {
+    } else if (wordState.forall(_.isOpen)) {
       true
     } else {
       val charGot = askForCharacter
-      if (wordState.exists(_._1 == charGot)) {
-        if (wordState.contains((charGot, true))) {
-          playIteration(wordState, mistakesDone, "Letter already present, try another one!")
-        } else {
+      wordState.find(_.letter == charGot) match {
+        case Some(LetterState(_, true)) =>
+          playIteration(wordState, mistakesDone, mistakesMax,
+            "Letter already present, try another one!")
+        case Some(LetterState(_, _)) =>
           playIteration(
-            wordState.map({
-              case (c, _) if c == charGot => (c, true)
-              case (c, open) => (c, open)
-            }), mistakesDone, "Hit!")
-        }
-      } else {
-        val mistakesDoneNow = mistakesDone + 1
-        playIteration(wordState, mistakesDoneNow, s"Missed, mistake $mistakesDoneNow out of $mistakesAllowed.")
+            wordState.map(ls => {
+              if (ls.letter == charGot) LetterState(ls.letter, isOpen = true) else ls
+            }), mistakesDone, mistakesMax, "Hit!")
+        case _ =>
+          val mistakesDoneNow = mistakesDone + 1
+          playIteration(wordState, mistakesDoneNow, mistakesMax,
+            s"Missed, mistake $mistakesDoneNow out of $mistakesMax.")
       }
     }
   }
 
-  def play: Boolean = {
-    val gameResult = playIteration(initWordState, 0, "")
+  def initWordState(word: String): WordState =
+    word.toList.map(LetterState(_, isOpen = false))
+
+  def play(word: String, mistakesMax: Int): Boolean = {
+    val wordState: WordState = initWordState(word)
+    val gameResult = playIteration(wordState, 0, mistakesMax, "")
+
     println()
     println(s"You ${if (gameResult) "won" else "lost"}!")
     if (!gameResult) {
@@ -60,9 +65,7 @@ class HangmanGame(word: String, mistakesAllowed: Int) {
     }
     gameResult
   }
-}
 
-object HangmanGame {
   def pickRandom[T](list: List[T]): T =
     list(new Random().nextInt(list.length))
 
@@ -71,9 +74,8 @@ object HangmanGame {
   @tailrec
   def playInLoop(words: List[String]): Unit = {
     val word = pickRandom(words)
-    val mistakesAllowed = Math.ceil(40 / word.length).toInt
-    val game = new HangmanGame(word, mistakesAllowed)
-    game.play
+    val mistakesAllowed = mistakesForWord(word)
+    play(word, mistakesAllowed)
 
     println("Play again? (y/n)")
     if (Console.in.read.toChar == 'y') {
