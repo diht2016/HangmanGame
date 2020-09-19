@@ -1,6 +1,6 @@
 # Hangman Game app example
 
-[![Build Status](https://travis-ci.org/diht2016/HangmanGame.svg?branch=master)](https://travis-ci.org/diht2016/HangmanGame) [![codecov](https://codecov.io/gh/diht2016/HangmanGame/branch/master/graph/badge.svg)](https://codecov.io/gh/diht2016/HangmanGame)
+[![Build Status](https://travis-ci.org/diht2016/HangmanGame.svg?branch=master)](https://travis-ci.org/diht2016/HangmanGame) [![codecov](https://codecov.io/gh/diht2016/HangmanGame/branch/master/graph/badge.svg)](https://codecov.io/gh/diht2016/HangmanGame) [![Maintainability](https://api.codeclimate.com/v1/badges/8ac8e2663ca4cc780d68/maintainability)](https://codeclimate.com/github/diht2016/HangmanGame/maintainability)
 
 This is an example app to test integrations with other services, such as [Travis](https://travis-ci.org/).
 
